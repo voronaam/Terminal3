@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<manifest xmlns="http://tizen.org/ns/packages" api-version="2.4" package="ca.vorona.termthree" version="1.0.0">
+    <profile name="mobile"/>
+    <ui-application appid="ca.vorona.termthree" exec="termthree" launch_mode="single" multiple="false" nodisplay="false" taskmanage="true" type="capp">
+        <label>termthree</label>
+        <icon>termthree.png</icon>
+    </ui-application>
+    <privileges>
+        <privilege>http://tizen.org/privilege/mediastorage</privilege>
+        <privilege>http://tizen.org/privilege/display</privilege>
+        <privilege>http://tizen.org/privilege/externalstorage.appdata</privilege>
+        <privilege>http://tizen.org/privilege/externalstorage</privilege>
+    </privileges>
+    <feature name="http://tizen.org/feature/screen.size.all">true</feature>
+</manifest>
