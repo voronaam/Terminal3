@@ -527,7 +527,7 @@ elm_main(int argc, char **argv)
 
    elm_language_set("");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
-   dlog_print(DLOG_DEBUG, "TERM_THREE", "Main function entry point");
+   DBG("Main function entry point");
 /*
    elm_app_compile_bin_dir_set(PACKAGE_BIN_DIR);
    elm_app_compile_lib_dir_set(PACKAGE_LIB_DIR);
@@ -779,7 +779,7 @@ elm_main(int argc, char **argv)
           }
         else
           {
-             size_w = 80;
+             size_w = /*80*/ 38;
              size_h = 24;
           }
      }
