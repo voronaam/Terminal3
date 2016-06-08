@@ -10,6 +10,7 @@
 #include "dbus.h"
 #include "sel.h"
 #include "controls.h"
+#include <efl_extension.h>
 
 #if (ELM_VERSION_MAJOR == 1) && (ELM_VERSION_MINOR < 8)
   #define PANES_TOP "left"
@@ -69,6 +70,7 @@ struct _Win
    Evas_Object *conform;
    Evas_Object *backbg;
    Evas_Object *base;
+   Evas_Object *popup;
    Config      *config;
    Eina_List   *terms;
    Split       *split;
@@ -113,7 +115,7 @@ static void _main_term_bg_redo(Term *term);
 static void _term_media_update(Term *term, const Config *config);
 static void _term_miniview_check(Term *term);
 static void _popmedia_queue_process(Term *term);
-
+static Evas_Object * create_menu_popup(Win *wn);
 void
 win_add_split(Win *wn, Term *term)
 {
@@ -341,6 +343,55 @@ main_trans_update(const Config *config)
      }
 }
 
+static void
+_cb_menu(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
+{
+   Win *wn = data;
+
+   DBG(_("Menu button callback"));
+   if (!wn->popup)
+	   wn->popup = create_menu_popup(wn);
+   else {
+	   evas_object_del(wn->popup);
+	   wn->popup = NULL;
+   }
+
+}
+
+static void
+_cb_dismissed_popup(void *data, Evas_Object *obj, void *event_info)
+{
+    Win *wn = data;
+	evas_object_del(obj);
+	wn->popup = NULL;
+}
+
+static void
+_cb_menu_popup(void *data, Evas_Object *obj, void *event_info)
+{
+	Win *wn = data;
+	Evas_Object *label;
+	const char *text = elm_object_item_text_get((Elm_Object_Item *) event_info);
+
+	evas_object_del(wn->popup);
+	wn->popup = NULL;
+
+	DBG(_("Selected menu option: %s"), text);
+}
+
+static void
+_cb_popup_back(void *data, Evas_Object *obj, void *event_info)
+{
+	Win *wn = data;
+	if (wn->popup)
+	{
+		evas_object_del(wn->popup);
+		wn->popup = NULL;
+
+		DBG(_("Popup dismissed"));
+	}
+}
+
 
 static void
 _cb_del(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event EINA_UNUSED)
@@ -469,6 +520,8 @@ win_new(const char *name, const char *role, const char *title,
    wn->config = config_fork(config);
 
    evas_object_event_callback_add(wn->win, EVAS_CALLBACK_DEL, _cb_del, wn);
+
+   eext_object_event_callback_add(wn->win, EEXT_CALLBACK_MORE, _cb_menu, wn);
 
    if (fullscreen) elm_win_fullscreen_set(wn->win, EINA_TRUE);
    if (iconic) elm_win_iconified_set(wn->win, EINA_TRUE);
@@ -2764,4 +2817,47 @@ windows_update(void)
    Win *wn;
 
    EINA_LIST_FOREACH(wins, l, wn) _split_update(wn->split);
+}
+
+static void
+move_menu_popup(Evas_Object *parent, Evas_Object *obj)
+{
+	Evas_Coord w, h;
+	int pos = -1;
+
+	elm_win_screen_size_get(parent, NULL, NULL, &w, &h);
+	pos = elm_win_rotation_get(parent);
+
+	switch (pos) {
+	case 0:
+	case 180:
+		evas_object_move(obj, 0, h);
+		break;
+	case 90:
+		evas_object_move(obj, 0, w);
+		break;
+	case 270:
+		evas_object_move(obj, h, w);
+		break;
+	}
+}
+
+static Evas_Object *
+create_menu_popup(Win *wn)
+{
+	Evas_Object *popup;
+
+	popup = elm_ctxpopup_add(wn->win);
+	elm_object_style_set(popup, "more/default");
+	elm_ctxpopup_auto_hide_disabled_set(popup, EINA_TRUE);
+	evas_object_smart_callback_add(popup, "dismissed", _cb_dismissed_popup, wn);
+
+	elm_ctxpopup_item_append(popup, "Item One", NULL, _cb_menu_popup, wn);
+	elm_ctxpopup_item_append(popup, "Item Two", NULL, _cb_menu_popup, wn);
+
+	move_menu_popup(wn->win, popup);
+	eext_object_event_callback_add(wn->win, EEXT_CALLBACK_BACK, _cb_popup_back, wn);
+	evas_object_show(popup);
+
+	return popup;
 }
