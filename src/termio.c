@@ -476,6 +476,8 @@ termio_grid_size_set(Evas_Object *obj, int w, int h)
    Termio *sd = evas_object_smart_data_get(obj);
    Evas_Coord mw = 1, mh = 1;
 
+   DBG(_("termio_grid_size_set %dx%d"), w, h);
+
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
    if (w < 1) w = 1;
@@ -565,6 +567,8 @@ termio_config_update(Evas_Object *obj)
 
    EINA_SAFETY_ON_NULL_RETURN(sd);
 
+   DBG("termio_config_update");
+
    if (sd->font.name) eina_stringshare_del(sd->font.name);
    sd->font.name = NULL;
 
@@ -610,6 +614,7 @@ termio_config_update(Evas_Object *obj)
 
    evas_object_geometry_get(obj, NULL, NULL, &ow, &oh);
    _smart_size(obj, ow / w, oh / h, EINA_TRUE);
+   DBG("Object %dx%x, char %dx%d, size %dx%d", ow, oh, w, h, ow / w, oh / h);
 }
 
 
@@ -5354,4 +5359,9 @@ termio_add(Evas_Object *parent, Config *config,
    sd->pty->cb.command.data = obj;
    _smart_size(obj, w, h, EINA_FALSE);
    return obj;
+}
+
+void termio_size_set(Evas_Object *obj, int w, int h)
+{
+	_smart_size(obj, w, h, EINA_FALSE);
 }

@@ -779,8 +779,8 @@ elm_main(int argc, char **argv)
           }
         else
           {
-             size_w = /*80*/ 38;
-             size_h = 24;
+             size_w = 80 /*38*/;
+             size_h = 24 /*28*/;
           }
      }
 
@@ -843,7 +843,7 @@ remote:
      }
 
    wn = win_new(name, role, title, icon_name, config,
-                fullscreen, iconic, borderless, override, maximized);
+                /*fullscreen*/EINA_TRUE, iconic, /*borderless*/EINA_TRUE, override, maximized);
    // set an env so terminal apps can detect they are in terminology :)
    putenv("TERMINOLOGY=1");
    unsetenv("DESKTOP_STARTUP_ID");
@@ -871,6 +871,9 @@ remote:
      }
 
    win_add_split(wn, term);
+
+   // We can now recalculate the size for the Tizen full screen
+   main_term_fullscreen(wn, term);
 
    main_trans_update(config);
    main_media_update(config);
@@ -918,6 +921,7 @@ remote:
         if (pos_y < 0) pos_y = screen_h + pos_y;
         evas_object_move(win, pos_x, pos_y);
      }
+
 /*
    if (nowm)
       ecore_evas_focus_set(ecore_evas_ecore_evas_get(

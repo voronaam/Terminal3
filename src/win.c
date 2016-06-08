@@ -671,6 +671,7 @@ _split_size_walk(Split *sp, Sizeinfo *info)
         // XXXX sp->terms sizedone too?
         if (!evas_object_data_get(sp->term->term, "sizedone"))
           {
+        	 DBG("_split_size_walk: sizedone was false");
              evas_object_data_set(sp->term->term, "sizedone", sp->term->term);
              info->req = 1;
           }
@@ -747,9 +748,16 @@ _size_job(void *data)
    else
      evas_object_size_hint_min_get(wn->split->term->bg, &mw, &mh);
    elm_win_size_base_set(wn->win, mw - info.step_x, mh - info.step_y);
+   DBG(_("_size_job: Size steps are set to %dx%d"), info.step_x, info.step_y);
    elm_win_size_step_set(wn->win, info.step_x, info.step_y);
    evas_object_size_hint_min_set(wn->backbg, mw, mh);
-   if (info.req) evas_object_resize(wn->win, info.req_w, info.req_h);
+   if (info.req) {
+	   int w =0, h = 0;
+	   DBG(_("_size_job: Resizing to %dx%d"), info.req_w, info.req_h);
+	   evas_object_resize(wn->win, info.req_w, info.req_h);
+	   evas_object_geometry_get(wn->win, NULL, NULL, &w, &h);
+	   DBG(_("_size_job: New size is %dx%d"), w, h);
+   }
 }
 
 void
@@ -766,17 +774,21 @@ _cb_size_hint(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event EIN
    Evas_Coord mw, mh, rw, rh, w = 0, h = 0;
 
    evas_object_size_hint_min_get(obj, &mw, &mh);
-   //evas_object_size_hint_request_get(obj, &rw, &rh);
+   // evas_object_size_hint_request_get(obj, &rw, &rh);
+   DBG("evas_object_size_hint_min_get %dx%d", mw, mh);
    edje_object_size_min_calc(term->base, &w, &h);
+   DBG("edje_object_size_min_calc base %dx%d", w, h);
    evas_object_size_hint_min_set(term->base, w, h);
    edje_object_size_min_calc(term->bg, &w, &h);
+   DBG("edje_object_size_min_calc bg %dx%d", w, h);
    evas_object_size_hint_min_set(term->bg, w, h);
    term->step_x = mw;
    term->step_y = mh;
-   term->min_w = w - mw;
-   term->min_h = h - mh;
-   term->req_w = w - mw/* + rw*/;
-   term->req_h = h - mh/* + rh*/;
+   term->min_w = abs(w - mw);
+   term->min_h = abs(h - mh);
+   term->req_w = abs(w - mw/* + rw*/);
+   term->req_h = abs(h - mh/* + rh*/);
+   DBG("Win size hints %dx%d, %dx%d, %dx%d", term->step_x, term->step_y, term->min_w, term->min_h, term->req_w, term->req_h);
 
    if (term->wn->size_job) ecore_job_del(term->wn->size_job);
    term->wn->size_job = ecore_job_add(_size_job, term->wn);
@@ -1379,6 +1391,24 @@ void win_term_swallow(Win *wn, Term *term)
 
    edje_object_part_swallow(base, "terminology.content", term->bg);
    _cb_size_hint(term, evas, term->term, NULL);
+}
+
+void main_term_fullscreen(Win *wn, Term *term)
+{
+    int screen_w, screen_h;
+    int char_w, char_h;
+
+    termio_size_get(term->term, &char_w, &char_h);
+    DBG(_("Termio size %dx%d"), char_w, char_h);
+
+    elm_win_screen_size_get(wn->win, NULL, NULL, &screen_w, &screen_h);
+    char_w = screen_w / term->step_x;
+    char_h = screen_h / term->step_y;
+    // TODO: Detect if on-screen keyboard takes over some of that screen space.
+    DBG(_("Screen size %dx%d char size is %dx%d, term size is %dx%d"), screen_w, screen_h, term->step_x, term->step_y, char_w, char_h);
+    termio_size_set(term->term, char_w, char_h);
+    termio_size_get(term->term, &char_w, &char_h);
+    DBG(_("Termio size %dx%d"), char_w, char_h);
 }
 
 void change_theme(Evas_Object *win, Config *config)

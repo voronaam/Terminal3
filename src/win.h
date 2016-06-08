@@ -46,4 +46,6 @@ void term_next(Term *term);
 void term_prev(Term *term);
 Win * term_win_get(Term *term);
 
+void main_term_fullscreen(Win *wn, Term *term);
+
 #endif
