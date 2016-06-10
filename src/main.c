@@ -880,6 +880,7 @@ remote:
    win_sizing_handle(wn);
    win = win_evas_object_get(wn);
    evas_object_show(win);
+   finalize_window(wn, term);
    if (startup_split)
      {
         unsigned int i = 0;

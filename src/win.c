@@ -376,7 +376,13 @@ _cb_menu_popup(void *data, Evas_Object *obj, void *event_info)
 	evas_object_del(wn->popup);
 	wn->popup = NULL;
 
+	if (!text) return;
+
 	DBG(_("Selected menu option: %s"), text);
+	if (!strcmp(text, "Exit")) {
+		Term * term = _find_term_under_mouse(wn);
+		main_close(wn->win, term->term);
+	}
 }
 
 static void
@@ -1462,6 +1468,14 @@ void main_term_fullscreen(Win *wn, Term *term)
     termio_size_set(term->term, char_w, char_h);
     termio_size_get(term->term, &char_w, &char_h);
     DBG(_("Termio size %dx%d"), char_w, char_h);
+}
+
+void finalize_window(Win *wn, Term *term)
+{
+	int w = -1, h = -1;
+	elm_win_size_base_get(term->term, &w, &h);
+	DBG(_("Conform %x size %dx%d"), term->term, w, h);
+	// DBG("vk %d", elm_obj_win_keyboard_mode_get());
 }
 
 void change_theme(Evas_Object *win, Config *config)
@@ -2852,8 +2866,8 @@ create_menu_popup(Win *wn)
 	elm_ctxpopup_auto_hide_disabled_set(popup, EINA_TRUE);
 	evas_object_smart_callback_add(popup, "dismissed", _cb_dismissed_popup, wn);
 
-	elm_ctxpopup_item_append(popup, "Item One", NULL, _cb_menu_popup, wn);
-	elm_ctxpopup_item_append(popup, "Item Two", NULL, _cb_menu_popup, wn);
+	elm_ctxpopup_item_append(popup, "Item One\0", NULL, _cb_menu_popup, wn);
+	elm_ctxpopup_item_append(popup, "Exit\0", NULL, _cb_menu_popup, wn);
 
 	move_menu_popup(wn->win, popup);
 	eext_object_event_callback_add(wn->win, EEXT_CALLBACK_BACK, _cb_popup_back, wn);
