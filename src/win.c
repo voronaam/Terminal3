@@ -379,10 +379,12 @@ _cb_menu_popup(void *data, Evas_Object *obj, void *event_info)
 	if (!text) return;
 
 	DBG(_("Selected menu option: %s"), text);
+	Term * term = win_focused_term_get(wn);
 	if (!strcmp(text, "Exit")) {
-		Term * term = _find_term_under_mouse(wn);
 		main_close(wn->win, term->term);
+		return;
 	}
+	finalize_window(wn, term);
 }
 
 static void
@@ -485,6 +487,7 @@ tg_win_add(const char *name, const char *role, const char *title, const char *ic
    if (!title) title = "Terminology";
    if (!icon_name) icon_name = "Terminology";
 
+   /*
    win = elm_win_add(NULL, name, ELM_WIN_BASIC);
    elm_win_title_set(win, title);
    elm_win_icon_name_set(win, icon_name);
@@ -497,6 +500,10 @@ tg_win_add(const char *name, const char *role, const char *title, const char *ic
             elm_app_data_dir_get());
    evas_object_image_file_set(o, buf, NULL);
    elm_win_icon_object_set(win, o);
+   */
+
+   win = elm_win_util_standard_add(name, title);
+   elm_win_autodel_set(win, EINA_TRUE);
 
    return win;
 }
@@ -529,11 +536,12 @@ win_new(const char *name, const char *role, const char *title,
 
    eext_object_event_callback_add(wn->win, EEXT_CALLBACK_MORE, _cb_menu, wn);
 
-   if (fullscreen) elm_win_fullscreen_set(wn->win, EINA_TRUE);
-   if (iconic) elm_win_iconified_set(wn->win, EINA_TRUE);
-   if (borderless) elm_win_borderless_set(wn->win, EINA_TRUE);
-   if (override) elm_win_override_set(wn->win, EINA_TRUE);
-   if (maximized) elm_win_maximized_set(wn->win, EINA_TRUE);
+   // None of that is needed on Tized WM. Quite contrary, it may break it!
+   // if (fullscreen) elm_win_fullscreen_set(wn->win, EINA_TRUE);
+   // if (iconic) elm_win_iconified_set(wn->win, EINA_TRUE);
+   // if (borderless) elm_win_borderless_set(wn->win, EINA_TRUE);
+   // if (override) elm_win_override_set(wn->win, EINA_TRUE);
+   // if (maximized) elm_win_maximized_set(wn->win, EINA_TRUE);
 
    wn->backbg = o = evas_object_rectangle_add(evas_object_evas_get(wn->win));
    evas_object_color_set(o, 0, 0, 0, 255);
@@ -542,6 +550,7 @@ win_new(const char *name, const char *role, const char *title,
    elm_win_resize_object_add(wn->win, o);
    evas_object_show(o);
 
+   elm_win_conformant_set(wn->win, EINA_TRUE);
    wn->conform = o = elm_conformant_add(wn->win);
    evas_object_size_hint_weight_set(o, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_fill_set(o, EVAS_HINT_FILL, EVAS_HINT_FILL);
@@ -719,6 +728,7 @@ _split_size_walk(Split *sp, Sizeinfo *info)
 {
    Sizeinfo inforet = { 0, 0, 0, 0, 0, 0, 0 };
 
+   DBG("_split_size_walk");
    if (sp->term)
      {
         info->min_w = sp->term->min_w;
@@ -1119,6 +1129,7 @@ _cb_size_track(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event EI
    Term *term;
    Evas_Coord w = 0, h = 0;
 
+   DBG("_cb_size_track");
    evas_object_geometry_get(obj, NULL, NULL, &w, &h);
    EINA_LIST_FOREACH(sp->terms, l, term)
      {
@@ -1473,7 +1484,7 @@ void main_term_fullscreen(Win *wn, Term *term)
 void finalize_window(Win *wn, Term *term)
 {
 	int w = -1, h = -1;
-	elm_win_size_base_get(term->term, &w, &h);
+	elm_win_size_base_get(wn->conform, &w, &h);
 	DBG(_("Conform %x size %dx%d"), term->term, w, h);
 	// DBG("vk %d", elm_obj_win_keyboard_mode_get());
 }
