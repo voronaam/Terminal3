@@ -843,7 +843,7 @@ remote:
      }
 
    wn = win_new(name, role, title, icon_name, config,
-                /*fullscreen*/EINA_TRUE, iconic, /*borderless*/EINA_TRUE, override, maximized);
+                /*fullscreen*/EINA_FALSE, iconic, /*borderless*/EINA_TRUE, override, maximized);
    // set an env so terminal apps can detect they are in terminology :)
    putenv("TERMINOLOGY=1");
    unsetenv("DESKTOP_STARTUP_ID");
