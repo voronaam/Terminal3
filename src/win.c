@@ -116,6 +116,8 @@ static void _term_media_update(Term *term, const Config *config);
 static void _term_miniview_check(Term *term);
 static void _popmedia_queue_process(Term *term);
 static Evas_Object * create_menu_popup(Win *wn);
+static void _cb_size_track(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event EINA_UNUSED);
+
 void
 win_add_split(Win *wn, Term *term)
 {
@@ -127,6 +129,8 @@ win_add_split(Win *wn, Term *term)
    sp->terms = eina_list_append(sp->terms, sp->term);
    _term_resize_track_start(sp);
    _split_tabcount_update(sp, sp->term);
+   evas_object_event_callback_add(wn->backbg, EVAS_CALLBACK_RESIZE, _cb_size_track, sp);
+
 }
 
 static Term *
@@ -348,7 +352,6 @@ _cb_menu(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *ev
 {
    Win *wn = data;
 
-   DBG(_("Menu button callback"));
    if (!wn->popup)
 	   wn->popup = create_menu_popup(wn);
    else {
@@ -543,15 +546,15 @@ win_new(const char *name, const char *role, const char *title,
    // if (override) elm_win_override_set(wn->win, EINA_TRUE);
    // if (maximized) elm_win_maximized_set(wn->win, EINA_TRUE);
 
-   wn->backbg = o = evas_object_rectangle_add(evas_object_evas_get(wn->win));
-   evas_object_color_set(o, 0, 0, 0, 255);
+   elm_win_conformant_set(wn->win, EINA_TRUE);
+   wn->conform = o = elm_conformant_add(wn->win);
    evas_object_size_hint_weight_set(o, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_fill_set(o, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_win_resize_object_add(wn->win, o);
    evas_object_show(o);
 
-   elm_win_conformant_set(wn->win, EINA_TRUE);
-   wn->conform = o = elm_conformant_add(wn->win);
+   wn->backbg = o = evas_object_rectangle_add(wn->conform);
+   evas_object_color_set(o, 0, 0, 0, 255);
    evas_object_size_hint_weight_set(o, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_fill_set(o, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_win_resize_object_add(wn->win, o);
@@ -1131,16 +1134,23 @@ _cb_size_track(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event EI
 
    DBG("_cb_size_track");
    evas_object_geometry_get(obj, NULL, NULL, &w, &h);
+   DBG("_cb_size_track (%dx%d)", w, h);
    EINA_LIST_FOREACH(sp->terms, l, term)
      {
         if (term->bg != obj) evas_object_resize(term->bg, w, h);
+        main_term_fullscreen(sp->wn, term);
      }
+   w = 0; h = 0;
+   evas_object_geometry_get(sp->wn->conform, NULL, NULL, &w, &h);
+   DBG("_cb_size_track (%dx%d)", w, h);
 }
 
 static void
 _term_resize_track_start(Split *sp)
 {
+   DBG("_term_resize_track_start");
    if ((!sp) || (!sp->term) || (!sp->term->bg)) return;
+   DBG("_term_resize_track_start - valid");
    evas_object_event_callback_del_full(sp->term->bg, EVAS_CALLBACK_RESIZE,
                                        _cb_size_track, sp);
    evas_object_event_callback_add(sp->term->bg, EVAS_CALLBACK_RESIZE,
@@ -1471,7 +1481,8 @@ void main_term_fullscreen(Win *wn, Term *term)
     termio_size_get(term->term, &char_w, &char_h);
     DBG(_("Termio size %dx%d"), char_w, char_h);
 
-    elm_win_screen_size_get(wn->win, NULL, NULL, &screen_w, &screen_h);
+    // elm_win_screen_size_get(wn->win, NULL, NULL, &screen_w, &screen_h);
+    evas_object_geometry_get(wn->conform, NULL, NULL, &screen_w, &screen_h);
     char_w = screen_w / term->step_x;
     char_h = screen_h / term->step_y;
     // TODO: Detect if on-screen keyboard takes over some of that screen space.

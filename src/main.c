@@ -873,7 +873,7 @@ remote:
    win_add_split(wn, term);
 
    // We can now recalculate the size for the Tizen full screen
-   main_term_fullscreen(wn, term);
+   // main_term_fullscreen(wn, term);
 
    main_trans_update(config);
    main_media_update(config);
